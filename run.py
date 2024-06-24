@@ -49,7 +49,9 @@ def main():
         model = None
 
         if model_name == "gllava":
-            model_name = "gllava-" + os.path.basename(args.ckpt_path)
+            model_name = "eval-gllava-" + os.path.basename(args.ckpt_path)
+            if args.work_dir == '.':
+                args.work_dir = args.ckpt_path
 
         pred_root = osp.join(args.work_dir, model_name)
         os.makedirs(pred_root, exist_ok=True)
