@@ -61,7 +61,7 @@ def infer_data_api(work_dir, model_name, dataset_name, index_set=None, api_nproc
     return res
 
 
-def infer_data(model_name, work_dir, dataset_name, out_file, verbose=False, api_nproc=4):
+def infer_data(model_name, ckpt_path, work_dir, dataset_name, out_file, verbose=False, api_nproc=4):
     prev_file = f'{work_dir}/{model_name}_{dataset_name}_PREV.pkl'
     res = load(prev_file) if osp.exists(prev_file) else {}
     if osp.exists(out_file):
@@ -94,7 +94,11 @@ def infer_data(model_name, work_dir, dataset_name, out_file, verbose=False, api_
     data = data[~data['index'].isin(res)]
     lt = len(data)
 
-    model = supported_VLM[model_name]() if isinstance(model_name, str) else model_name
+    if model_name in supported_VLM:
+        model = supported_VLM[model_name]() if isinstance(model_name, str) else model_name
+    else:
+        from vlmeval.vlm.gllava.gllava import GLLaVA
+        model = GLLaVA(model_pth=ckpt_path)
 
     is_api = getattr(model, 'is_api', False)
     if is_api:
@@ -143,7 +147,7 @@ def infer_data(model_name, work_dir, dataset_name, out_file, verbose=False, api_
 
 
 # A wrapper for infer_data, do the pre & post processing
-def infer_data_job(model, work_dir, model_name, dataset_name, verbose=False, api_nproc=4, ignore_failed=False):
+def infer_data_job(model, ckpt_path, work_dir, model_name, dataset_name, verbose=False, api_nproc=4, ignore_failed=False):
     rank, world_size = get_rank_and_world_size()
     result_file = osp.join(work_dir, f'{model_name}_{dataset_name}.xlsx')
 
@@ -161,8 +165,8 @@ def infer_data_job(model, work_dir, model_name, dataset_name, verbose=False, api
     tmpl = osp.join(work_dir, '{}' + f'{world_size}_{dataset_name}.pkl')
     out_file = tmpl.format(rank)
 
-    model = infer_data(
-        model, work_dir=work_dir, dataset_name=dataset_name, out_file=out_file, verbose=verbose, api_nproc=api_nproc)
+    model = infer_data(model, ckpt_path=ckpt_path, work_dir=work_dir, dataset_name=dataset_name, out_file=out_file,
+                       verbose=verbose, api_nproc=api_nproc)
     if world_size > 1:
         dist.barrier()
 

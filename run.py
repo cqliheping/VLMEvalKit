@@ -11,6 +11,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, nargs='+', required=True)
     parser.add_argument('--model', type=str, nargs='+', required=True)
+    parser.add_argument("--ckpt-path", type=str, default=None, help='path to the model checkpoint')
     parser.add_argument('--work-dir', type=str, default='.', help='select the output directory')
     parser.add_argument('--mode', type=str, default='all', choices=['all', 'infer'])
     parser.add_argument('--nproc', type=int, default=4, help='Parallel API calling')
@@ -47,6 +48,9 @@ def main():
     for _, model_name in enumerate(args.model):
         model = None
 
+        if model_name == "gllava":
+            model_name = "gllava-" + os.path.basename(args.ckpt_path)
+
         pred_root = osp.join(args.work_dir, model_name)
         os.makedirs(pred_root, exist_ok=True)
 
@@ -78,6 +82,7 @@ def main():
 
             model = infer_data_job(
                 model,
+                ckpt_path=args.ckpt_path,
                 work_dir=pred_root,
                 model_name=model_name,
                 dataset_name=dataset_name,
