@@ -12,6 +12,7 @@ def parse_args():
     parser.add_argument('--data', type=str, nargs='+', required=True)
     parser.add_argument('--model', type=str, nargs='+', required=True)
     parser.add_argument("--ckpt-path", type=str, default=None, help='path to the model checkpoint')
+    parser.add_argument('--load-nbit', type=int, default=16, help='default 16-bit model')
     parser.add_argument('--work-dir', type=str, default='.', help='select the output directory')
     parser.add_argument('--mode', type=str, default='all', choices=['all', 'infer'])
     parser.add_argument('--nproc', type=int, default=4, help='Parallel API calling')
@@ -49,7 +50,7 @@ def main():
         model = None
 
         if model_name == "gllava":
-            model_name = "eval-gllava-" + os.path.basename(args.ckpt_path)
+            model_name = "eval-gllava-" + os.path.basename(args.ckpt_path) + "-%dbit" % args.load_nbit
             if args.work_dir == '.':
                 args.work_dir = args.ckpt_path
 
@@ -58,6 +59,7 @@ def main():
 
         for _, dataset_name in enumerate(args.data):
             custom_flag = False
+            #print("===== infer for dataset: ", dataset_name, " =====")
 
             if dataset_name not in dataset_URLs:
                 file_path = osp.join(LMUDataRoot(), f'{dataset_name}.tsv')
@@ -79,12 +81,10 @@ def main():
             if osp.exists(result_file) and args.rerun:
                 os.system(f'rm {pred_root}/{model_name}_{dataset_name}_*')
 
-            if model is None:
-                model = model_name  # which is only a name
-
             model = infer_data_job(
                 model,
                 ckpt_path=args.ckpt_path,
+                load_nbit=args.load_nbit,
                 work_dir=pred_root,
                 model_name=model_name,
                 dataset_name=dataset_name,

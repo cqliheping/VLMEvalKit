@@ -24,8 +24,10 @@ class GLLaVA(BaseModel):
             sys.exit(-1)
 
         config_path = os.path.join(model_pth, "model.params")
-        load_nbit = 16
-        self.runner = ModelRunner(checkpoint_path=model_pth, config_path=config_path, load_nbit=load_nbit)
+        load_nbit = kwargs.pop('load_nbit', 16)
+        print(f'Loading model from {model_pth} with config {config_path} and load_nbit {load_nbit}')
+        device = "cuda:%s" % str(torch.cuda.current_device())
+        self.runner = ModelRunner(checkpoint_path=model_pth, config_path=config_path, load_nbit=load_nbit, device=device)
 
         self.conv_mode = self.runner.default_prompt_version()
         #do_sample = True, temperature = 0.2, top_p = None, max_new_tokens = 64
@@ -94,7 +96,6 @@ class GLLaVA(BaseModel):
 
         with torch.inference_mode():
             results = self.runner.run(prompts, images, **self.kwargs)
-        print(results)
         return results[0]
 
 
